@@ -1,0 +1,12 @@
+# Exported from Render on 2025-05-14T22:06:42Z
+services:
+- type: web
+  name: backendDSI
+  runtime: node
+  repo: https://github.com/Juanchipiruli/backendDSI
+  plan: free
+  region: oregon
+  buildCommand: npm install
+  startCommand: node server.js
+  autoDeployTrigger: commit
+version: "1"
