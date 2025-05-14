@@ -1,0 +1,12 @@
+{
+    "users": [
+      {
+        "legajo": "12345",
+        "password": "test123",
+        "nombre": "Juan Pérez",
+        "dni": "30123456",
+        "carrera": "Ingeniería en Sistemas",
+        "localidad": "San Francisco"
+      }
+    ]
+  }
