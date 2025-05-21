@@ -8,5 +8,13 @@
         "carrera": "Ingeniería en Sistemas",
         "localidad": "San Francisco"
       }
+    ],
+    "admins": [
+      {
+        "username": "admin",
+        "password": "admin123",
+        "nombre": "Administrador",
+        "permisos": ["crear", "editar", "eliminar", "ver"]
+      }
     ]
   }

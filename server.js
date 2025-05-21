@@ -17,6 +17,136 @@ server.use((req, res, next) => {
   next();
 });
 
+// Middleware para validar los datos de alumnos en solicitudes POST
+server.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/alumnos') {
+    // Verificar que todos los campos requeridos estén presentes
+    const requiredFields = ['legajo', 'password', 'nombre', 'dni', 'carrera', 'localidad'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: 'Faltan campos requeridos',
+        missingFields: missingFields
+      });
+    }
+    
+    // Aquí puedes agregar más validaciones si es necesario
+    // Por ejemplo, validar formato de DNI, longitud de legajo, etc.
+    
+    // Si todo está bien, continuar con la solicitud
+    next();
+  } else {
+    // Para otras rutas o métodos, simplemente continuar
+    next();
+  }
+});
+
+// Endpoint personalizado para login
+server.get('/login', (req, res) => {
+  const { legajo, password } = req.query;
+  
+  // Verificar que se proporcionaron legajo y password
+  if (!legajo || !password) {
+    return res.status(400).json({ 
+      error: 'Se requieren legajo y password como parámetros de consulta' 
+    });
+  }
+  
+  // Obtener los datos de alumnos
+  const db = router.db.getState();
+  const alumnos = db.alumnos || [];
+  
+  // Buscar el alumno con el legajo y password proporcionados
+  const alumno = alumnos.find(a => a.legajo === legajo && a.password === password);
+  
+  if (alumno) {
+    // Si se encuentra el alumno, devolver información básica (sin la contraseña)
+    const { password, ...alumnoInfo } = alumno;
+    return res.json({ 
+      success: true, 
+      alumno: alumnoInfo,
+      isAdmin: false
+    });
+  } else {
+    // Si no se encuentra el alumno, devolver un error
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Credenciales inválidas' 
+    });
+  }
+});
+
+// Endpoint para login de administrador
+server.get('/admin/login', (req, res) => {
+  const { username, password } = req.query;
+  
+  // Verificar que se proporcionaron username y password
+  if (!username || !password) {
+    return res.status(400).json({ 
+      error: 'Se requieren username y password como parámetros de consulta' 
+    });
+  }
+  
+  // Obtener los datos de administradores
+  const db = router.db.getState();
+  const admins = db.admins || [];
+  
+  // Buscar el administrador con el username y password proporcionados
+  const admin = admins.find(a => a.username === username && a.password === password);
+  
+  if (admin) {
+    // Si se encuentra el administrador, devolver información básica (sin la contraseña)
+    const { password, ...adminInfo } = admin;
+    return res.json({ 
+      success: true, 
+      usuario: adminInfo,
+      isAdmin: true
+    });
+  } else {
+    // Si no se encuentra el administrador, devolver un error
+    return res.status(401).json({ 
+      success: false, 
+      error: 'Credenciales de administrador inválidas' 
+    });
+  }
+});
+
+// Middleware para verificar si es administrador
+const verificarAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Admin ')) {
+    return res.status(403).json({
+      success: false,
+      error: 'Acceso denegado. Se requieren permisos de administrador.'
+    });
+  }
+  
+  const adminData = authHeader.split(' ')[1];
+  const [username, password] = Buffer.from(adminData, 'base64').toString().split(':');
+  
+  // Obtener los datos de administradores
+  const db = router.db.getState();
+  const admins = db.admins || [];
+  
+  // Verificar si existe un administrador con esas credenciales
+  const esAdmin = admins.some(a => a.username === username && a.password === password);
+  
+  if (esAdmin) {
+    next(); // Continuar con la solicitud
+  } else {
+    return res.status(403).json({
+      success: false,
+      error: 'Credenciales de administrador inválidas'
+    });
+  }
+};
+
+// Rutas protegidas que requieren autenticación de administrador
+server.use('/admin/users', verificarAdmin);
+server.use('/admin/config', verificarAdmin);
+
 // Usar middlewares predeterminados (logger, static, cors y no-cache)
 server.use(middlewares);
 
