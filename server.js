@@ -53,23 +53,23 @@ server.get('/login', (req, res) => {
     });
   }
   
-  // Obtener los datos de alumnos
+  // Obtener los datos de usuarios
   const db = router.db.getState();
-  const alumnos = db.alumnos || [];
+  const usuarios = db.users || []; // Cambiado de alumnos a users
   
-  // Buscar el alumno con el legajo y password proporcionados
-  const alumno = alumnos.find(a => a.legajo === legajo && a.password === password);
+  // Buscar el usuario con el legajo y password proporcionados
+  const usuario = usuarios.find(u => u.legajo === legajo && u.password === password);
   
-  if (alumno) {
-    // Si se encuentra el alumno, devolver información básica (sin la contraseña)
-    const { password, ...alumnoInfo } = alumno;
+  if (usuario) {
+    // Si se encuentra el usuario, devolver información básica (sin la contraseña)
+    const { password, ...usuarioInfo } = usuario;
     return res.json({ 
       success: true, 
-      alumno: alumnoInfo,
+      alumno: usuarioInfo, // Mantener alumno para compatibilidad con tu frontend
       isAdmin: false
     });
   } else {
-    // Si no se encuentra el alumno, devolver un error
+    // Si no se encuentra el usuario, devolver un error
     return res.status(401).json({ 
       success: false, 
       error: 'Credenciales inválidas' 
