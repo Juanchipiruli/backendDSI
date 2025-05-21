@@ -19,7 +19,7 @@ server.use((req, res, next) => {
 
 // Middleware para validar los datos de alumnos en solicitudes POST
 server.use((req, res, next) => {
-  if (req.method === 'POST' && req.path === '/alumnos') {
+  if (req.method === 'POST' && req.path === '/users') {
     // Verificar que todos los campos requeridos estén presentes
     const requiredFields = ['legajo', 'password', 'nombre', 'dni', 'carrera', 'localidad'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
@@ -98,7 +98,7 @@ server.get('/admin/login', (req, res) => {
   if (admin) {
     // Si se encuentra el administrador, devolver información básica (sin la contraseña)
     const { password, ...adminInfo } = admin;
-    return res.json({ 
+    return res.status(200).json({ 
       success: true, 
       usuario: adminInfo,
       isAdmin: true
