@@ -4,6 +4,8 @@
       "legajo": "12345",
       "password": "test123",
       "nombre": "Juan Pérez",
+      "nombre_pila": "Juan",
+      "apellido": "Pérez",
       "dni": "30123456",
       "carrera": "Ingeniería en Sistemas",
       "localidad": "San Francisco"
@@ -11,11 +13,24 @@
     {
       "legajo": "54321",
       "nombre": "Juan Bruera",
+      "nombre_pila": "Juan",
+      "apellido": "Bruera",
       "dni": "45937429",
       "carrera": "Ingeniería en Sistemas",
       "localidad": "Porteña",
       "password": "test123",
       "role": "student"
+    },
+    {
+      "legajo": "11111",
+      "nombre_pila": "Guillermo",
+      "apellido": "Bruera",
+      "dni": "11111111",
+      "carrera": "Ingeniería de Sistemas",
+      "localidad": "Freyre",
+      "password": "1234567",
+      "role": "student",
+      "nombre": "Guillermo Bruera"
     }
   ],
   "admins": [
@@ -23,6 +38,8 @@
       "username": "admin",
       "password": "admin123",
       "nombre": "Administrador",
+      "nombre_pila": "Admin",
+      "apellido": "Sistema",
       "permisos": [
         "crear",
         "editar",

@@ -28,7 +28,31 @@ server.use((req, res, next) => {
 server.use((req, res, next) => {
   if (req.method === 'POST' && req.path === '/users') {
     // Verificar que todos los campos requeridos estén presentes
-    const requiredFields = ['legajo', 'password', 'nombre', 'dni', 'carrera', 'localidad'];
+    const requiredFields = ['legajo', 'password', 'dni', 'carrera', 'localidad'];
+    
+    // Verificar que tenga o bien 'nombre' o bien 'nombre_pila' y 'apellido'
+    if (!req.body.nombre && (!req.body.nombre_pila || !req.body.apellido)) {
+      return res.status(400).json({
+        error: 'Debe proporcionar o bien el campo "nombre" o bien los campos "nombre_pila" y "apellido"',
+      });
+    }
+    
+    // Si se proporcionan nombre_pila y apellido pero no nombre, crear el campo nombre
+    if (!req.body.nombre && req.body.nombre_pila && req.body.apellido) {
+      req.body.nombre = `${req.body.nombre_pila} ${req.body.apellido}`;
+    }
+    // Si se proporciona nombre pero no nombre_pila o apellido, extraerlos
+    else if (req.body.nombre && (!req.body.nombre_pila || !req.body.apellido)) {
+      const nombreCompleto = req.body.nombre.split(' ');
+      if (nombreCompleto.length >= 2) {
+        req.body.nombre_pila = nombreCompleto[0];
+        req.body.apellido = nombreCompleto.slice(1).join(' ');
+      } else {
+        req.body.nombre_pila = req.body.nombre;
+        req.body.apellido = '';
+      }
+    }
+    
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
@@ -37,9 +61,6 @@ server.use((req, res, next) => {
         missingFields: missingFields
       });
     }
-    
-    // Aquí puedes agregar más validaciones si es necesario
-    // Por ejemplo, validar formato de DNI, longitud de legajo, etc.
     
     // Si todo está bien, continuar con la solicitud
     next();
@@ -72,10 +93,19 @@ server.post('/login', (req, res) => {
     // Si se encuentra el usuario, generar token JWT
     const { password, ...usuarioInfo } = usuario;
     
+    // Asegurar que existan nombre_pila y apellido
+    if (!usuario.nombre_pila || !usuario.apellido) {
+      const nombreCompleto = usuario.nombre.split(' ');
+      usuarioInfo.nombre_pila = nombreCompleto[0] || '';
+      usuarioInfo.apellido = nombreCompleto.slice(1).join(' ') || '';
+    }
+    
     // Crear payload del token
     const payload = {
       legajo: usuario.legajo,
       nombre: usuario.nombre,
+      nombre_pila: usuarioInfo.nombre_pila,
+      apellido: usuarioInfo.apellido,
       role: 'user',
       isAdmin: false
     };
@@ -121,10 +151,19 @@ server.post('/admin/login', (req, res) => {
     // Si se encuentra el administrador, generar token JWT
     const { password, ...adminInfo } = admin;
     
+    // Asegurar que existan nombre_pila y apellido
+    if (!admin.nombre_pila || !admin.apellido) {
+      const nombreCompleto = admin.nombre.split(' ');
+      adminInfo.nombre_pila = nombreCompleto[0] || '';
+      adminInfo.apellido = nombreCompleto.slice(1).join(' ') || '';
+    }
+    
     // Crear payload del token
     const payload = {
       username: admin.username,
       nombre: admin.nombre,
+      nombre_pila: adminInfo.nombre_pila,
+      apellido: adminInfo.apellido,
       permisos: admin.permisos,
       role: 'admin',
       isAdmin: true
@@ -246,7 +285,32 @@ server.get('/admin/users/all', verificarAdmin, (req, res) => {
 server.post('/admin/users/add', verificarAdmin, (req, res) => {
   try {
     // Verificar que todos los campos requeridos estén presentes
-    const requiredFields = ['legajo', 'password', 'nombre', 'dni', 'carrera', 'localidad'];
+    const requiredFields = ['legajo', 'password', 'dni', 'carrera', 'localidad'];
+    
+    // Verificar que tenga o bien 'nombre' o bien 'nombre_pila' y 'apellido'
+    if (!req.body.nombre && (!req.body.nombre_pila || !req.body.apellido)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debe proporcionar o bien el campo "nombre" o bien los campos "nombre_pila" y "apellido"',
+      });
+    }
+    
+    // Si se proporcionan nombre_pila y apellido pero no nombre, crear el campo nombre
+    if (!req.body.nombre && req.body.nombre_pila && req.body.apellido) {
+      req.body.nombre = `${req.body.nombre_pila} ${req.body.apellido}`;
+    }
+    // Si se proporciona nombre pero no nombre_pila o apellido, extraerlos
+    else if (req.body.nombre && (!req.body.nombre_pila || !req.body.apellido)) {
+      const nombreCompleto = req.body.nombre.split(' ');
+      if (nombreCompleto.length >= 2) {
+        req.body.nombre_pila = nombreCompleto[0];
+        req.body.apellido = nombreCompleto.slice(1).join(' ');
+      } else {
+        req.body.nombre_pila = req.body.nombre;
+        req.body.apellido = '';
+      }
+    }
+    
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
@@ -313,10 +377,34 @@ server.put('/admin/users/update/:legajo', verificarAdmin, (req, res) => {
       });
     }
     
+    // Manejar la actualización de nombre, nombre_pila y apellido
+    const datosActualizacion = { ...req.body };
+    
+    // Si se proporcionan nombre_pila y apellido, actualizar también el nombre
+    if (datosActualizacion.nombre_pila !== undefined || datosActualizacion.apellido !== undefined) {
+      const nombre_pila = datosActualizacion.nombre_pila !== undefined ? 
+        datosActualizacion.nombre_pila : usuarios[usuarioIndex].nombre_pila || usuarios[usuarioIndex].nombre.split(' ')[0];
+      
+      const apellido = datosActualizacion.apellido !== undefined ? 
+        datosActualizacion.apellido : usuarios[usuarioIndex].apellido || 
+        (usuarios[usuarioIndex].nombre.split(' ').length > 1 ? 
+          usuarios[usuarioIndex].nombre.split(' ').slice(1).join(' ') : '');
+      
+      datosActualizacion.nombre = `${nombre_pila} ${apellido}`.trim();
+      datosActualizacion.nombre_pila = nombre_pila;
+      datosActualizacion.apellido = apellido;
+    }
+    // Si se proporciona solo nombre, actualizar nombre_pila y apellido
+    else if (datosActualizacion.nombre !== undefined) {
+      const nombreCompleto = datosActualizacion.nombre.split(' ');
+      datosActualizacion.nombre_pila = nombreCompleto[0] || '';
+      datosActualizacion.apellido = nombreCompleto.length > 1 ? nombreCompleto.slice(1).join(' ') : '';
+    }
+    
     // Actualizar los campos proporcionados
     const usuarioActualizado = {
       ...usuarios[usuarioIndex],
-      ...req.body
+      ...datosActualizacion
     };
     
     // Mantener el legajo original
